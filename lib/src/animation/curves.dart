@@ -33,7 +33,8 @@ abstract class ParametricCurve<T> {
   /// implementation of [transform], which delegates the remaining logic to
   /// [transformInternal].
   T transform(double t) {
-    assert(t >= 0.0 && t <= 1.0, 'parametric value $t is outside of [0, 1] range.');
+    assert(t >= 0.0 && t <= 1.0,
+        'parametric value $t is outside of [0, 1] range.');
     return transformInternal(t);
   }
 
@@ -126,7 +127,7 @@ class SawTooth extends Curve {
   /// Creates a sawtooth curve.
   ///
   /// The [count] argument must not be null.
-  const SawTooth(this.count) : assert(count != null);
+  const SawTooth(this.count);
 
   /// The number of repetitions of the sawtooth pattern in the unit interval.
   final int count;
@@ -156,10 +157,7 @@ class Interval extends Curve {
   /// Creates an interval curve.
   ///
   /// The arguments must not be null.
-  const Interval(this.begin, this.end, { this.curve = Curves.linear })
-    : assert(begin != null),
-      assert(end != null),
-      assert(curve != null);
+  const Interval(this.begin, this.end, {this.curve = Curves.linear});
 
   /// The largest value for which this interval is 0.0.
   ///
@@ -182,8 +180,7 @@ class Interval extends Curve {
     assert(end <= 1.0);
     assert(end >= begin);
     t = ((t - begin) / (end - begin)).clamp(0.0, 1.0);
-    if (t == 0.0 || t == 1.0)
-      return t;
+    if (t == 0.0 || t == 1.0) return t;
     return curve.transform(t);
   }
 
@@ -202,7 +199,7 @@ class Threshold extends Curve {
   /// Creates a threshold curve.
   ///
   /// The [threshold] argument must not be null.
-  const Threshold(this.threshold) : assert(threshold != null);
+  const Threshold(this.threshold);
 
   /// The value before which the curve is 0.0 and after which the curve is 1.0.
   ///
@@ -244,11 +241,7 @@ class Cubic extends Curve {
   /// cubic curves in [Curves].
   ///
   /// The [a], [b], [c], and [d] arguments must not be null.
-  const Cubic(this.a, this.b, this.c, this.d)
-    : assert(a != null),
-      assert(b != null),
-      assert(c != null),
-      assert(d != null);
+  const Cubic(this.a, this.b, this.c, this.d);
 
   /// The x coordinate of the first control point.
   ///
@@ -277,9 +270,7 @@ class Cubic extends Curve {
   static const double _cubicErrorBound = 0.001;
 
   double _evaluateCubic(double a, double b, double m) {
-    return 3 * a * (1 - m) * (1 - m) * m +
-           3 * b * (1 - m) *           m * m +
-                                       m * m * m;
+    return 3 * a * (1 - m) * (1 - m) * m + 3 * b * (1 - m) * m * m + m * m * m;
   }
 
   @override
@@ -458,9 +449,6 @@ abstract class Curve2D extends ParametricCurve<Offset> {
     // 4. Recursively sample the two parts.
     //
     // This algorithm concentrates samples in areas of high curvature.
-    assert(tolerance != null);
-    assert(start != null);
-    assert(end != null);
     assert(end > start);
     // We want to pick a random seed that will keep the result stable if
     // evaluated again, so we use the first non-generated control point.
@@ -476,7 +464,8 @@ abstract class Curve2D extends ParametricCurve<Offset> {
     final Curve2DSample first = Curve2DSample(start, transform(start));
     final Curve2DSample last = Curve2DSample(end, transform(end));
     final List<Curve2DSample> samples = <Curve2DSample>[first];
-    void sample(Curve2DSample p, Curve2DSample q, {bool forceSubdivide = false}) {
+    void sample(Curve2DSample p, Curve2DSample q,
+        {bool forceSubdivide = false}) {
       // Pick a random point somewhat near the center, which avoids aliasing
       // problems with periodic curves.
       final double t = p.t + (0.45 + 0.1 * rand.nextDouble()) * (q.t - p.t);
@@ -489,12 +478,14 @@ abstract class Curve2D extends ParametricCurve<Offset> {
         sample(r, q);
       }
     }
+
     // If the curve starts and ends on the same point, then we force it to
     // subdivide at least once, because otherwise it will terminate immediately.
     sample(
       first,
       last,
-      forceSubdivide: (first.value.dx - last.value.dx).abs() < tolerance && (first.value.dy - last.value.dy).abs() < tolerance,
+      forceSubdivide: (first.value.dx - last.value.dx).abs() < tolerance &&
+          (first.value.dy - last.value.dy).abs() < tolerance,
     );
     return samples;
   }
@@ -517,7 +508,6 @@ abstract class Curve2D extends ParametricCurve<Offset> {
   /// single-valued, it will return the parameter for only one of the values at
   /// the given `x` location.
   double findInverse(double x) {
-    assert(x != null);
     double start = 0.0;
     double end = 1.0;
     late double mid;
@@ -552,7 +542,7 @@ class Curve2DSample {
   /// A const constructor for the sample so that subclasses can be const.
   ///
   /// All arguments must not be null.
-  const Curve2DSample(this.t, this.value) : assert(t != null), assert(value != null);
+  const Curve2DSample(this.t, this.value);
 
   /// The parametric location of this sample point along the curve.
   final double t;
@@ -618,53 +608,54 @@ class CatmullRomSpline extends Curve2D {
   /// [transform] is called.  If you would rather pre-compute the structures,
   /// use [CatmullRomSpline.precompute] instead.
   CatmullRomSpline(
-      List<Offset> controlPoints, {
-        double tension = 0.0,
-        Offset? startHandle,
-        Offset? endHandle,
-      }) : assert(controlPoints != null),
-           assert(tension != null),
-           assert(tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
-           assert(tension >= 0.0, 'tension $tension must not be negative.'),
-           assert(controlPoints.length > 3, 'There must be at least four control points to create a CatmullRomSpline.'),
-           _controlPoints = controlPoints,
-           _startHandle = startHandle,
-           _endHandle = endHandle,
-           _tension = tension,
-           _cubicSegments = <List<Offset>>[];
+    List<Offset> controlPoints, {
+    double tension = 0.0,
+    Offset? startHandle,
+    Offset? endHandle,
+  })  : assert(
+            tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
+        assert(tension >= 0.0, 'tension $tension must not be negative.'),
+        assert(controlPoints.length > 3,
+            'There must be at least four control points to create a CatmullRomSpline.'),
+        _controlPoints = controlPoints,
+        _startHandle = startHandle,
+        _endHandle = endHandle,
+        _tension = tension,
+        _cubicSegments = <List<Offset>>[];
 
   /// Constructs a centripetal Catmull-Rom spline curve.
   ///
   /// The same as [new CatmullRomSpline], except that the internal data
   /// structures are precomputed instead of being computed lazily.
   CatmullRomSpline.precompute(
-      List<Offset> controlPoints, {
-        double tension = 0.0,
-        Offset? startHandle,
-        Offset? endHandle,
-      }) : assert(controlPoints != null),
-           assert(tension != null),
-           assert(tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
-           assert(tension >= 0.0, 'tension $tension must not be negative.'),
-           assert(controlPoints.length > 3, 'There must be at least four control points to create a CatmullRomSpline.'),
-           _controlPoints = null,
-           _startHandle = null,
-           _endHandle = null,
-           _tension = null,
-           _cubicSegments = _computeSegments(controlPoints, tension, startHandle: startHandle, endHandle: endHandle);
-
+    List<Offset> controlPoints, {
+    double tension = 0.0,
+    Offset? startHandle,
+    Offset? endHandle,
+  })  : assert(
+            tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
+        assert(tension >= 0.0, 'tension $tension must not be negative.'),
+        assert(controlPoints.length > 3,
+            'There must be at least four control points to create a CatmullRomSpline.'),
+        _controlPoints = null,
+        _startHandle = null,
+        _endHandle = null,
+        _tension = null,
+        _cubicSegments = _computeSegments(controlPoints, tension,
+            startHandle: startHandle, endHandle: endHandle);
 
   static List<List<Offset>> _computeSegments(
-      List<Offset> controlPoints,
-      double tension, {
-      Offset? startHandle,
-      Offset? endHandle,
-    }) {
+    List<Offset> controlPoints,
+    double tension, {
+    Offset? startHandle,
+    Offset? endHandle,
+  }) {
     // If not specified, select the first and last control points (which are
     // handles: they are not intersected by the resulting curve) so that they
     // extend the first and last segments, respectively.
     startHandle ??= controlPoints[0] * 2.0 - controlPoints[1];
-    endHandle ??= controlPoints.last * 2.0 - controlPoints[controlPoints.length - 2];
+    endHandle ??=
+        controlPoints.last * 2.0 - controlPoints[controlPoints.length - 2];
     final List<Offset> allPoints = <Offset>[
       startHandle,
       ...controlPoints,
@@ -680,7 +671,12 @@ class CatmullRomSpline extends Curve2D {
     final double reverseTension = 1.0 - tension;
     final List<List<Offset>> result = <List<Offset>>[];
     for (int i = 0; i < allPoints.length - 3; ++i) {
-      final List<Offset> curve = <Offset>[allPoints[i], allPoints[i + 1], allPoints[i + 2], allPoints[i + 3]];
+      final List<Offset> curve = <Offset>[
+        allPoints[i],
+        allPoints[i + 1],
+        allPoints[i + 2],
+        allPoints[i + 3]
+      ];
       final Offset diffCurve10 = curve[1] - curve[0];
       final Offset diffCurve21 = curve[2] - curve[1];
       final Offset diffCurve32 = curve[3] - curve[2];
@@ -688,8 +684,12 @@ class CatmullRomSpline extends Curve2D {
       final double t12 = math.pow(diffCurve21.distance, alpha).toDouble();
       final double t23 = math.pow(diffCurve32.distance, alpha).toDouble();
 
-      final Offset m1 = (diffCurve21 + (diffCurve10 / t01 - (curve[2] - curve[0]) / (t01 + t12)) * t12) * reverseTension;
-      final Offset m2 = (diffCurve21 + (diffCurve32 / t23 - (curve[3] - curve[1]) / (t12 + t23)) * t12) * reverseTension;
+      final Offset m1 = (diffCurve21 +
+              (diffCurve10 / t01 - (curve[2] - curve[0]) / (t01 + t12)) * t12) *
+          reverseTension;
+      final Offset m2 = (diffCurve21 +
+              (diffCurve32 / t23 - (curve[3] - curve[1]) / (t12 + t23)) * t12) *
+          reverseTension;
       final Offset sumM12 = m1 + m2;
 
       final List<Offset> segment = <Offset>[
@@ -717,7 +717,8 @@ class CatmullRomSpline extends Curve2D {
       return;
     }
     _cubicSegments.addAll(
-      _computeSegments(_controlPoints!, _tension!, startHandle: _startHandle, endHandle: _endHandle),
+      _computeSegments(_controlPoints!, _tension!,
+          startHandle: _startHandle, endHandle: _endHandle),
     );
   }
 
@@ -747,10 +748,10 @@ class CatmullRomSpline extends Curve2D {
     }
     final List<Offset> cubicControlPoints = _cubicSegments[index];
     final double localT2 = localT * localT;
-    return cubicControlPoints[0] * localT2 * localT
-         + cubicControlPoints[1] * localT2
-         + cubicControlPoints[2] * localT
-         + cubicControlPoints[3];
+    return cubicControlPoints[0] * localT2 * localT +
+        cubicControlPoints[1] * localT2 +
+        cubicControlPoints[2] * localT +
+        cubicControlPoints[3];
   }
 }
 
@@ -800,14 +801,14 @@ class CatmullRomCurve extends Curve {
   ///
   ///  * This [paper on using Catmull-Rom splines](http://faculty.cs.tamu.edu/schaefer/research/cr_cad.pdf).
   CatmullRomCurve(this.controlPoints, {this.tension = 0.0})
-      : assert(tension != null),
-        assert(() {
+      : assert(() {
           return validateControlPoints(
             controlPoints,
             tension: tension,
             reasons: _debugAssertReasons..clear(),
           );
-        }(), 'control points $controlPoints could not be validated:\n  ${_debugAssertReasons.join('\n  ')}'),
+        }(),
+            'control points $controlPoints could not be validated:\n  ${_debugAssertReasons.join('\n  ')}'),
         // Pre-compute samples so that we don't have to evaluate the spline's inverse
         // all the time in transformInternal.
         _precomputedSamples = <Curve2DSample>[];
@@ -817,19 +818,20 @@ class CatmullRomCurve extends Curve {
   /// Same as [new CatmullRomCurve], but it precomputes the internal curve data
   /// structures for a more predictable computation load.
   CatmullRomCurve.precompute(this.controlPoints, {this.tension = 0.0})
-      : assert(tension != null),
-        assert(() {
+      : assert(() {
           return validateControlPoints(
             controlPoints,
             tension: tension,
             reasons: _debugAssertReasons..clear(),
           );
-        }(), 'control points $controlPoints could not be validated:\n  ${_debugAssertReasons.join('\n  ')}'),
+        }(),
+            'control points $controlPoints could not be validated:\n  ${_debugAssertReasons.join('\n  ')}'),
         // Pre-compute samples so that we don't have to evaluate the spline's inverse
         // all the time in transformInternal.
         _precomputedSamples = _computeSamples(controlPoints, tension);
 
-  static List<Curve2DSample> _computeSamples(List<Offset> controlPoints, double tension) {
+  static List<Curve2DSample> _computeSamples(
+      List<Offset> controlPoints, double tension) {
     return CatmullRomSpline.precompute(
       // Force the first and last control points for the spline to be (0, 0)
       // and (1, 1), respectively.
@@ -899,11 +901,10 @@ class CatmullRomCurve extends Curve {
   /// In release mode, this function can be used to decide if a proposed
   /// modification to the curve will result in a valid curve.
   static bool validateControlPoints(
-      List<Offset>? controlPoints, {
-      double tension = 0.0,
-      List<String>? reasons,
-    }) {
-    assert(tension != null);
+    List<Offset>? controlPoints, {
+    double tension = 0.0,
+    List<String>? reasons,
+  }) {
     if (controlPoints == null) {
       assert(() {
         reasons?.add('Supplied control points cannot be null');
@@ -914,15 +915,21 @@ class CatmullRomCurve extends Curve {
 
     if (controlPoints.length < 2) {
       assert(() {
-        reasons?.add('There must be at least two points supplied to create a valid curve.');
+        reasons?.add(
+            'There must be at least two points supplied to create a valid curve.');
         return true;
       }());
       return false;
     }
 
-    controlPoints = <Offset>[Offset.zero, ...controlPoints, const Offset(1.0, 1.0)];
+    controlPoints = <Offset>[
+      Offset.zero,
+      ...controlPoints,
+      const Offset(1.0, 1.0)
+    ];
     final Offset startHandle = controlPoints[0] * 2.0 - controlPoints[1];
-    final Offset endHandle = controlPoints.last * 2.0 - controlPoints[controlPoints.length - 2];
+    final Offset endHandle =
+        controlPoints.last * 2.0 - controlPoints[controlPoints.length - 2];
     controlPoints = <Offset>[startHandle, ...controlPoints, endHandle];
     double lastX = -double.infinity;
     for (int i = 0; i < controlPoints.length; ++i) {
@@ -930,7 +937,8 @@ class CatmullRomCurve extends Curve {
           i < controlPoints.length - 2 &&
           (controlPoints[i].dx <= 0.0 || controlPoints[i].dx >= 1.0)) {
         assert(() {
-          reasons?.add('Control points must have X values between 0.0 and 1.0, exclusive. '
+          reasons?.add(
+              'Control points must have X values between 0.0 and 1.0, exclusive. '
               'Point $i has an x value (${controlPoints![i].dx}) which is outside the range.');
           return true;
         }());
@@ -938,7 +946,8 @@ class CatmullRomCurve extends Curve {
       }
       if (controlPoints[i].dx <= lastX) {
         assert(() {
-          reasons?.add('Each X coordinate must be greater than the preceding X coordinate '
+          reasons?.add(
+              'Each X coordinate must be greater than the preceding X coordinate '
               '(i.e. must be monotonically increasing in X). Point $i has an x value of '
               '${controlPoints![i].dx}, which is not greater than $lastX');
           return true;
@@ -953,17 +962,22 @@ class CatmullRomCurve extends Curve {
     // An empirical test to make sure things are single-valued in X.
     lastX = -double.infinity;
     const double tolerance = 1e-3;
-    final CatmullRomSpline testSpline = CatmullRomSpline(controlPoints, tension: tension);
+    final CatmullRomSpline testSpline =
+        CatmullRomSpline(controlPoints, tension: tension);
     final double start = testSpline.findInverse(0.0);
     final double end = testSpline.findInverse(1.0);
-    final Iterable<Curve2DSample> samplePoints = testSpline.generateSamples(start: start, end: end);
+    final Iterable<Curve2DSample> samplePoints =
+        testSpline.generateSamples(start: start, end: end);
+
     /// If the first and last points in the samples aren't at (0,0) or (1,1)
     /// respectively, then the curve is multi-valued at the ends.
-    if (samplePoints.first.value.dy.abs() > tolerance || (1.0 - samplePoints.last.value.dy).abs() > tolerance) {
+    if (samplePoints.first.value.dy.abs() > tolerance ||
+        (1.0 - samplePoints.last.value.dy).abs() > tolerance) {
       bool bail = true;
       success = false;
       assert(() {
-        reasons?.add('The curve has more than one Y value at X = ${samplePoints.first.value.dx}. '
+        reasons?.add(
+            'The curve has more than one Y value at X = ${samplePoints.first.value.dx}. '
             'Try moving some control points further away from this value of X, or increasing '
             'the tension.');
         // No need to keep going if we're not giving reasons.
@@ -984,8 +998,9 @@ class CatmullRomCurve extends Curve {
         bool bail = true;
         success = false;
         assert(() {
-          reasons?.add('The resulting curve has an X value ($x) which is outside '
-              'the range [0.0, 1.0], inclusive.');
+          reasons
+              ?.add('The resulting curve has an X value ($x) which is outside '
+                  'the range [0.0, 1.0], inclusive.');
           // No need to keep going if we're not giving reasons.
           bail = reasons == null;
           return true;
@@ -1000,8 +1015,9 @@ class CatmullRomCurve extends Curve {
         bool bail = true;
         success = false;
         assert(() {
-          reasons?.add('The curve has more than one Y value at x = $x. Try moving '
-            'some control points further apart in X, or increasing the tension.');
+          reasons?.add(
+              'The curve has more than one Y value at x = $x. Try moving '
+              'some control points further apart in X, or increasing the tension.');
           // No need to keep going if we're not giving reasons.
           bail = reasons == null;
           return true;
@@ -1073,7 +1089,7 @@ class FlippedCurve extends Curve {
   /// Creates a flipped curve.
   ///
   /// The [curve] argument must not be null.
-  const FlippedCurve(this.curve) : assert(curve != null);
+  const FlippedCurve(this.curve);
 
   /// The curve that is being flipped.
   final Curve curve;
@@ -1162,7 +1178,6 @@ class _BounceInOutCurve extends Curve {
   }
 }
 
-
 // ELASTIC CURVES
 
 /// An oscillating curve that grows in magnitude while overshooting its bounds.
@@ -1184,7 +1199,8 @@ class ElasticInCurve extends Curve {
   double transformInternal(double t) {
     final double s = period / 4.0;
     t = t - 1.0;
-    return -math.pow(2.0, 10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period);
+    return -math.pow(2.0, 10.0 * t) *
+        math.sin((t - s) * (math.pi * 2.0) / period);
   }
 
   @override
@@ -1211,7 +1227,9 @@ class ElasticOutCurve extends Curve {
   @override
   double transformInternal(double t) {
     final double s = period / 4.0;
-    return math.pow(2.0, -10 * t) * math.sin((t - s) * (math.pi * 2.0) / period) + 1.0;
+    return math.pow(2.0, -10 * t) *
+            math.sin((t - s) * (math.pi * 2.0) / period) +
+        1.0;
   }
 
   @override
@@ -1241,9 +1259,14 @@ class ElasticInOutCurve extends Curve {
     final double s = period / 4.0;
     t = 2.0 * t - 1.0;
     if (t < 0.0)
-      return -0.5 * math.pow(2.0, 10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period);
+      return -0.5 *
+          math.pow(2.0, 10.0 * t) *
+          math.sin((t - s) * (math.pi * 2.0) / period);
     else
-      return math.pow(2.0, -10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period) * 0.5 + 1.0;
+      return math.pow(2.0, -10.0 * t) *
+              math.sin((t - s) * (math.pi * 2.0) / period) *
+              0.5 +
+          1.0;
   }
 
   @override
@@ -1251,7 +1274,6 @@ class ElasticInOutCurve extends Curve {
     return '${objectRuntimeType(this, 'ElasticInOutCurve')}($period)';
   }
 }
-
 
 // PREDEFINED CURVES
 
